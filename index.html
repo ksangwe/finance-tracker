@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Finance Tracker</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <!-- First focusable element: jumps keyboard users straight to main -->
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header>
+    <h1>Student Finance Tracker</h1>
+    <p class="tagline">Track your spending, stay on budget.</p>
+  </header>
+
+  <nav aria-label="Primary">
+    <ul>
+      <li><a href="#dashboard">Dashboard</a></li>
+      <li><a href="#records">Records</a></li>
+      <li><a href="#add">Add</a></li>
+      <li><a href="#settings">Settings</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+  <main id="main">
+
+    <section id="dashboard" aria-labelledby="dashboard-heading">
+      <h2 id="dashboard-heading">Dashboard</h2>
+
+      <div class="stats-grid">
+        <article class="stat-card">
+          <h3>Total records</h3>
+          <p class="stat-value" id="stat-total">0</p>
+        </article>
+        <article class="stat-card">
+          <h3>Total spent</h3>
+          <p class="stat-value" id="stat-sum">0.00</p>
+        </article>
+        <article class="stat-card">
+          <h3>Top category</h3>
+          <p class="stat-value" id="stat-top">—</p>
+        </article>
+      </div>
+
+      <!-- Cap/overage message, announced to screen readers -->
+      <p id="cap-message" role="status" aria-live="polite"></p>
+
+      <!-- Last-7-days trend chart goes here (built in M5) -->
+      <div id="trend-chart" class="trend-chart" aria-hidden="true"></div>
+    </section>
+    <section id="records" aria-labelledby="records-heading">
+      <h2 id="records-heading">Records</h2>
+
+      <div class="controls">
+        <label for="search">Search</label>
+        <input type="text" id="search" name="search"
+               placeholder="Type to filter…" />
+
+        <label for="search-flags">
+          <input type="checkbox" id="search-flags" />
+          Ignore case
+        </label>
+
+        <label for="sort">Sort by</label>
+        <select id="sort" name="sort">
+          <option value="date-desc">Date (newest)</option>
+          <option value="date-asc">Date (oldest)</option>
+          <option value="desc-asc">Description (A–Z)</option>
+          <option value="desc-desc">Description (Z–A)</option>
+          <option value="amount-asc">Amount (low–high)</option>
+          <option value="amount-desc">Amount (high–low)</option>
+        </select>
+      </div>
+
+      <table id="records-table">
+        <caption class="sr-only">List of transactions</caption>
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Description</th>
+            <th scope="col">Category</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="records-body">
+          <!-- Rows injected by JavaScript (M4) -->
+        </tbody>
+      </table>
+
+      <p id="records-empty" class="empty-state" hidden>
+        No records yet. Add your first transaction.
+      </p>
+    </section>
+    <section id="add" aria-labelledby="add-heading">
+      <h2 id="add-heading">Add transaction</h2>
+
+      <form id="record-form" novalidate>
+        <!-- Hidden field: holds the id when editing an existing record -->
+        <input type="hidden" id="record-id" />
+
+        <div class="field">
+          <label for="description">Description</label>
+          <input type="text" id="description" name="description"
+                 aria-describedby="description-error" required />
+          <span class="error" id="description-error" role="alert"></span>
+        </div>
+
+        <div class="field">
+          <label for="amount">Amount</label>
+          <input type="text" id="amount" name="amount"
+                 inputmode="decimal"
+                 aria-describedby="amount-error" required />
+          <span class="error" id="amount-error" role="alert"></span>
+        </div>
+
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category" name="category"
+                  aria-describedby="category-error" required>
+            <option value="">Choose…</option>
+            <option value="Food">Food</option>
+            <option value="Books">Books</option>
+            <option value="Transport">Transport</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Fees">Fees</option>
+            <option value="Other">Other</option>
+          </select>
+          <span class="error" id="category-error" role="alert"></span>
+        </div>
+
+        <div class="field">
+          <label for="date">Date</label>
+          <input type="text" id="date" name="date"
+                 placeholder="YYYY-MM-DD"
+                 aria-describedby="date-error" required />
+          <span class="error" id="date-error" role="alert"></span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="save-btn">Save</button>
+          <button type="button" id="cancel-btn" hidden>Cancel edit</button>
+        </div>
+      </form>
+    </section>
+    <section id="settings" aria-labelledby="settings-heading">
+      <h2 id="settings-heading">Settings</h2>
+
+      <div class="field">
+        <label for="cap">Spending cap</label>
+        <input type="text" id="cap" name="cap" inputmode="decimal"
+               placeholder="e.g. 500" />
+      </div>
+
+      <fieldset class="currency-settings">
+        <legend>Currency rates (manual)</legend>
+        <p>Base currency: <strong>USD</strong></p>
+        <div class="field">
+          <label for="rate-eur">1 USD = ? EUR</label>
+          <input type="text" id="rate-eur" inputmode="decimal" placeholder="0.92" />
+        </div>
+        <div class="field">
+          <label for="rate-rwf">1 USD = ? RWF</label>
+          <input type="text" id="rate-rwf" inputmode="decimal" placeholder="1300" />
+        </div>
+      </fieldset>
+
+      <div class="data-actions">
+        <button type="button" id="export-btn">Export JSON</button>
+        <label for="import-file" class="button-like">Import JSON</label>
+        <input type="file" id="import-file" accept="application/json" hidden />
+      </div>
+    </section>
+
+    <section id="about" aria-labelledby="about-heading">
+      <h2 id="about-heading">About</h2>
+      <p>
+        A responsive, accessible tool for tracking student spending.
+        Built with vanilla HTML, CSS, and JavaScript.
+      </p>
+      <ul>
+        <li>GitHub: <a href="https://github.com/ksangwe">github.com/ksangwe</a></li>
+        <li>Email: <a href="mailto:k.sangwe@alustudent.com">k.sangwe@alustudent.com</a></li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Student Finance Tracker — built for ALU Responsive UI assignment.</p>
+  </footer>
+
+  <script type="module" src="scripts/app.js"></script>
+</body>
+</html>
