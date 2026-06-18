@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tests — Finance Tracker</title>
+  <link rel="stylesheet" href="styles/main.css" />
+  <style>
+    .pass { color: green; }
+    .fail { color: var(--danger); font-weight: 700; }
+    li { margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Validator Tests</h1>
+  <p id="summary"></p>
+  <ul id="results"></ul>
+
+  <script type="module">
+    import {
+      validateDescription,
+      validateAmount,
+      validateCategory,
+      validateDate,
+    } from "./scripts/validators.js";
+
+    const results = document.getElementById("results");
+    let passed = 0;
+    let total = 0;
+
+    // assert(label, condition): records a pass/fail line.
+    function assert(label, condition) {
+      total++;
+      const li = document.createElement("li");
+      if (condition) {
+        passed++;
+        li.className = "pass";
+        li.textContent = "PASS: " + label;
+      } else {
+        li.className = "fail";
+        li.textContent = "FAIL: " + label;
+      }
+      results.appendChild(li);
+    }
+
+    // Helper: a validator passes when it returns "" (no error).
+    const ok = (msg) => msg === "";
+    const bad = (msg) => msg !== "";
+
+    // ===== Description =====
+    assert("valid description", ok(validateDescription("Lunch at cafe")));
+    assert("rejects leading space", bad(validateDescription(" Lunch")));
+    assert("rejects trailing space", bad(validateDescription("Lunch ")));
+    assert("rejects empty", bad(validateDescription("")));
+    assert("catches doubled word", bad(validateDescription("coffee coffee")));
+
+    // ===== Amount =====
+    assert("valid whole amount", ok(validateAmount("100")));
+    assert("valid decimal amount", ok(validateAmount("12.50")));
+    assert("valid zero", ok(validateAmount("0")));
+    assert("rejects leading zero", bad(validateAmount("01")));
+    assert("rejects 3 decimals", bad(validateAmount("1.999")));
+    assert("rejects negative", bad(validateAmount("-5")));
+
+    // ===== Category =====
+    assert("valid category", ok(validateCategory("Food")));
+    assert("valid hyphenated", ok(validateCategory("Dining-Out")));
+    assert("rejects digits", bad(validateCategory("Food123")));
+    assert("rejects empty", bad(validateCategory("")));
+
+    // ===== Date =====
+    assert("valid date", ok(validateDate("2025-09-29")));
+    assert("rejects month 13", bad(validateDate("2025-13-01")));
+    assert("rejects day 32", bad(validateDate("2025-01-32")));
+    assert("rejects wrong format", bad(validateDate("29-09-2025")));
+
+    // Summary
+    const summary = document.getElementById("summary");
+    summary.textContent = `${passed} / ${total} tests passed`;
+    summary.className = passed === total ? "pass" : "fail";
+  </script>
+</body>
+</html>
