@@ -1,15 +1,21 @@
 // scripts/app.js
-// Entry point: wires the form to the validators.
+// Entry point: wires form, validation, rendering, sorting, and search.
 
 import { validateRecord } from "./validators.js";
+import { getRecords, addRecord } from "./state.js";
+import { compileRegex, filterRecords } from "./search.js";
+import { renderRecords, sortRecords } from "./ui.js";
 
-// Map each field name to its input + error span in the DOM.
 const fields = ["description", "amount", "category", "date"];
 
 const form = document.getElementById("record-form");
 const statusRegion = document.getElementById("cap-message");
+const searchInput = document.getElementById("search");
+const searchFlags = document.getElementById("search-flags");
+const sortSelect = document.getElementById("sort");
 
-// Read current form values into a plain object.
+// ===== Form reading & validation (from M3) =====
+
 function readForm() {
   return {
     description: document.getElementById("description").value,
@@ -19,12 +25,10 @@ function readForm() {
   };
 }
 
-// Show an error message (or clear it) for one field.
 function showError(field, message) {
   const span = document.getElementById(`${field}-error`);
   const input = document.getElementById(field);
   span.textContent = message;
-  // Tell assistive tech whether the field is currently invalid.
   if (message) {
     input.setAttribute("aria-invalid", "true");
   } else {
@@ -32,7 +36,6 @@ function showError(field, message) {
   }
 }
 
-// Validate everything; return true if the whole form is valid.
 function validateForm() {
   const errors = validateRecord(readForm());
   let firstInvalid = null;
@@ -42,23 +45,37 @@ function validateForm() {
       firstInvalid = document.getElementById(field);
     }
   }
-  // Move focus to the first broken field for keyboard users.
   if (firstInvalid) firstInvalid.focus();
   return !firstInvalid;
 }
 
-// Handle submit: stop the page reload, validate, and (for now) log.
+// ===== Rendering pipeline =====
+// Reads state, applies search filter, applies sort, then renders.
+
+function refresh() {
+  const re = compileRegex(searchInput.value, searchFlags.checked);
+  let records = getRecords();
+  records = filterRecords(records, re);
+  records = sortRecords(records, sortSelect.value);
+  renderRecords(records, re);
+}
+
+// ===== Events =====
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
-  if (validateForm()) {
-    statusRegion.textContent = "Looks valid! (Saving comes in M4.)";
-    console.log("Valid record:", readForm());
-  } else {
+  if (!validateForm()) {
     statusRegion.textContent = "Please fix the highlighted fields.";
+    return;
   }
+  addRecord(readForm());
+  form.reset();
+  for (const field of fields) showError(field, "");
+  statusRegion.textContent = "Transaction saved.";
+  refresh();
 });
 
-// Live validation: re-check a field when the user leaves it.
+// Live per-field validation on blur.
 for (const field of fields) {
   const input = document.getElementById(field);
   input.addEventListener("blur", () => {
@@ -66,3 +83,11 @@ for (const field of fields) {
     showError(field, errors[field]);
   });
 }
+
+// Search: re-render as the user types.
+searchInput.addEventListener("input", refresh);
+searchFlags.addEventListener("change", refresh);
+sortSelect.addEventListener("change", refresh);
+
+// Initial render on page load.
+refresh();
