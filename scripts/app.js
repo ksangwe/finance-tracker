@@ -4,7 +4,7 @@
 import { validateRecord } from "./validators.js";
 import { getRecords, addRecord } from "./state.js";
 import { compileRegex, filterRecords } from "./search.js";
-import { renderRecords, sortRecords } from "./ui.js";
+import { renderRecords, sortRecords, renderStats, renderCap } from "./ui.js";
 
 const fields = ["description", "amount", "category", "date"];
 
@@ -13,6 +13,7 @@ const statusRegion = document.getElementById("cap-message");
 const searchInput = document.getElementById("search");
 const searchFlags = document.getElementById("search-flags");
 const sortSelect = document.getElementById("sort");
+const capInput = document.getElementById("cap");
 
 // ===== Form reading & validation (from M3) =====
 
@@ -53,9 +54,15 @@ function validateForm() {
 // Reads state, applies search filter, applies sort, then renders.
 
 function refresh() {
+  const all = getRecords();
+
+  // Stats and cap always reflect ALL records, not the filtered view.
+  renderStats(all);
+  renderCap(all, Number(capInput.value));
+
+  // The table reflects search + sort.
   const re = compileRegex(searchInput.value, searchFlags.checked);
-  let records = getRecords();
-  records = filterRecords(records, re);
+  let records = filterRecords(all, re);
   records = sortRecords(records, sortSelect.value);
   renderRecords(records, re);
 }
@@ -88,6 +95,7 @@ for (const field of fields) {
 searchInput.addEventListener("input", refresh);
 searchFlags.addEventListener("change", refresh);
 sortSelect.addEventListener("change", refresh);
+capInput.addEventListener("input", refresh);
 
 // Initial render on page load.
 refresh();
