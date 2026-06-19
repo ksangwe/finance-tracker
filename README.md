@@ -4,7 +4,9 @@ A responsive, accessible single-page web app for students to track spending,
 built with vanilla HTML, CSS, and JavaScript — no frameworks.
 
 **Live site:** https://ksangwe.github.io/finance-tracker/
+
 **Repo:** https://github.com/ksangwe/finance-tracker
+
 **Contact:** k.sangwe@alustudent.com
 ---
 

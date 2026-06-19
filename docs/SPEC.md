@@ -95,7 +95,7 @@ Food, Books, Transport, Entertainment, Fees, Other (editable in Settings).
 +----------+-----------------------------------------+
 | FOOTER: contact / github                           |
 +----------------------------------------------------+
-```
+\```
 
 ### Notes
 - Records render as **cards on mobile**, **table on desktop** (same data).
