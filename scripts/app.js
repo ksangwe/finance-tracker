@@ -2,7 +2,8 @@
 // Entry point: wires form, validation, rendering, sorting, and search.
 
 import { validateRecord } from "./validators.js";
-import { getRecords, addRecord } from "./state.js";
+import { getRecords, addRecord, exportJSON, importJSON } from "./state.js";
+import { loadSettings, saveSettings } from "./storage.js";
 import { compileRegex, filterRecords } from "./search.js";
 import { renderRecords, sortRecords, renderStats, renderCap } from "./ui.js";
 
@@ -14,6 +15,10 @@ const searchInput = document.getElementById("search");
 const searchFlags = document.getElementById("search-flags");
 const sortSelect = document.getElementById("sort");
 const capInput = document.getElementById("cap");
+const exportBtn = document.getElementById("export-btn");
+const importFile = document.getElementById("import-file");
+const rateEur = document.getElementById("rate-eur");
+const rateRwf = document.getElementById("rate-rwf");
 
 // ===== Form reading & validation (from M3) =====
 
@@ -96,6 +101,63 @@ searchInput.addEventListener("input", refresh);
 searchFlags.addEventListener("change", refresh);
 sortSelect.addEventListener("change", refresh);
 capInput.addEventListener("input", refresh);
+
+// ===== Export: download records as a JSON file =====
+exportBtn.addEventListener("click", () => {
+  const json = exportJSON();
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "finance-data.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+  statusRegion.textContent = "Data exported.";
+});
+
+// ===== Import: read a JSON file and load it =====
+importFile.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = importJSON(reader.result);
+    if (result.ok) {
+      statusRegion.textContent = `Imported ${result.count} records.`;
+      refresh();
+    } else {
+      statusRegion.textContent = `Import failed: ${result.error}`;
+    }
+    importFile.value = ""; // reset so the same file can be re-imported
+  };
+  reader.readAsText(file);
+});
+
+// ===== Settings: load saved values, save on change =====
+
+function applySettings() {
+  const s = loadSettings();
+  if (s.cap != null) capInput.value = s.cap;
+  if (s.rateEur != null) rateEur.value = s.rateEur;
+  if (s.rateRwf != null) rateRwf.value = s.rateRwf;
+}
+
+function persistSettings() {
+  saveSettings({
+    cap: capInput.value,
+    rateEur: rateEur.value,
+    rateRwf: rateRwf.value,
+  });
+}
+
+capInput.addEventListener("input", persistSettings);
+rateEur.addEventListener("input", persistSettings);
+rateRwf.addEventListener("input", persistSettings);
+
+applySettings(); // restore saved settings on load
 
 // Initial render on page load.
 refresh();

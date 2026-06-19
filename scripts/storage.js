@@ -26,3 +26,25 @@ export function save(records) {
     return false;
   }
 }
+
+// ===== Settings persistence (M6) =====
+
+const SETTINGS_KEY = "finance:settings";
+
+export function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveSettings(settings) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    return true;
+  } catch {
+    return false;
+  }
+}

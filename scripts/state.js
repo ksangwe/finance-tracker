@@ -65,3 +65,55 @@ export function setRecords(newRecords) {
   records = newRecords;
   save(records);
 }
+
+// ===== JSON import / export (M6) =====
+
+// Export the current records as a formatted JSON string.
+export function exportJSON() {
+  return JSON.stringify(records, null, 2);
+}
+
+// Validate that an object looks like a real record.
+function isValidRecord(obj) {
+  return (
+    obj &&
+    typeof obj.id === "string" &&
+    typeof obj.description === "string" &&
+    typeof obj.amount === "number" &&
+    typeof obj.category === "string" &&
+    typeof obj.date === "string"
+  );
+}
+
+// Import records from a JSON string.
+// Returns { ok: true, count } on success, or { ok: false, error } on failure.
+export function importJSON(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { ok: false, error: "File is not valid JSON." };
+  }
+
+  if (!Array.isArray(data)) {
+    return { ok: false, error: "JSON must be an array of records." };
+  }
+
+  // Every item must pass the record shape check.
+  for (const item of data) {
+    if (!isValidRecord(item)) {
+      return { ok: false, error: "One or more records are malformed." };
+    }
+  }
+
+  // Backfill timestamps if a record is missing them.
+  const now = new Date().toISOString();
+  const cleaned = data.map((r) => ({
+    ...r,
+    createdAt: r.createdAt || now,
+    updatedAt: r.updatedAt || now,
+  }));
+
+  setRecords(cleaned);
+  return { ok: true, count: cleaned.length };
+}
