@@ -2,7 +2,14 @@
 // Entry point: wires form, validation, rendering, sorting, and search.
 
 import { validateRecord } from "./validators.js";
-import { getRecords, addRecord, exportJSON, importJSON } from "./state.js";
+import {
+  getRecords,
+  addRecord,
+  updateRecord,
+  deleteRecord,
+  exportJSON,
+  importJSON,
+} from "./state.js";
 import { loadSettings, saveSettings } from "./storage.js";
 import { compileRegex, filterRecords } from "./search.js";
 import { renderRecords, sortRecords, renderStats, renderCap } from "./ui.js";
@@ -19,6 +26,10 @@ const exportBtn = document.getElementById("export-btn");
 const importFile = document.getElementById("import-file");
 const rateEur = document.getElementById("rate-eur");
 const rateRwf = document.getElementById("rate-rwf");
+const cancelBtn = document.getElementById("cancel-btn");
+const saveBtn = document.getElementById("save-btn");
+const recordIdField = document.getElementById("record-id");
+const tbody = document.getElementById("records-body");
 
 // ===== Form reading & validation (from M3) =====
 
@@ -80,10 +91,17 @@ form.addEventListener("submit", (event) => {
     statusRegion.textContent = "Please fix the highlighted fields.";
     return;
   }
-  addRecord(readForm());
-  form.reset();
-  for (const field of fields) showError(field, "");
-  statusRegion.textContent = "Transaction saved.";
+
+  const editingId = recordIdField.value;
+  if (editingId) {
+    updateRecord(editingId, readForm());
+    statusRegion.textContent = "Transaction updated.";
+  } else {
+    addRecord(readForm());
+    statusRegion.textContent = "Transaction saved.";
+  }
+
+  resetForm();
   refresh();
 });
 
@@ -158,6 +176,62 @@ rateEur.addEventListener("input", persistSettings);
 rateRwf.addEventListener("input", persistSettings);
 
 applySettings(); // restore saved settings on load
+
+// ===== Edit & Delete (event delegation) =====
+
+// One listener on the table body handles all row buttons.
+tbody.addEventListener("click", (event) => {
+  const editButton = event.target.closest(".edit-btn");
+  const deleteButton = event.target.closest(".delete-btn");
+
+  if (editButton) {
+    startEdit(editButton.dataset.id);
+  } else if (deleteButton) {
+    confirmDelete(deleteButton.dataset.id);
+  }
+});
+
+// Load a record's values into the form for editing.
+function startEdit(id) {
+  const record = getRecords().find((r) => r.id === id);
+  if (!record) return;
+
+  recordIdField.value = record.id;
+  document.getElementById("description").value = record.description;
+  document.getElementById("amount").value = record.amount;
+  document.getElementById("category").value = record.category;
+  document.getElementById("date").value = record.date;
+
+  saveBtn.textContent = "Update";
+  cancelBtn.hidden = false;
+  statusRegion.textContent = `Editing ${record.description}.`;
+  document.getElementById("description").focus();
+}
+
+// Confirm, then delete.
+function confirmDelete(id) {
+  const record = getRecords().find((r) => r.id === id);
+  if (!record) return;
+  if (!window.confirm(`Delete "${record.description}"?`)) return;
+
+  deleteRecord(id);
+  statusRegion.textContent = "Record deleted.";
+  refresh();
+}
+
+// Cancel edit mode: clear the form and reset the button.
+function resetForm() {
+  form.reset();
+  recordIdField.value = "";
+  saveBtn.textContent = "Save";
+  cancelBtn.hidden = true;
+  for (const field of fields) showError(field, "");
+}
+
+cancelBtn.addEventListener("click", () => {
+  resetForm();
+  statusRegion.textContent = "Edit cancelled.";
+});
 
 // Initial render on page load.
 refresh();
